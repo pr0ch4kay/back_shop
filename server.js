@@ -41,7 +41,6 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/stats", statsRoutes);
 
-// Корневой маршрут
 app.get("/", (req, res) => {
   res.json({
     message: "🚀 API работает!",
@@ -68,14 +67,36 @@ app.use((err, req, res, next) => {
 // ===== ЗАПУСК =====
 const start = async () => {
   try {
-    console.log('🔄 Подключение к MongoDB...');
+    console.log('🔄 Запуск сервера...');
     await connectDB();
     
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Сервер запущен на порту ${PORT}`);
       console.log(`🌐 API доступен: http://localhost:${PORT}`);
     });
+    
+    // ✅ Настройки для Railway
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
+    
+    // ✅ Обработка завершения
+    process.on('SIGTERM', () => {
+      console.log('🛑 Получен SIGTERM, завершаем работу...');
+      server.close(() => {
+        console.log('✅ Сервер остановлен');
+        process.exit(0);
+      });
+    });
+    
+    process.on('SIGINT', () => {
+      console.log('🛑 Получен SIGINT, завершаем работу...');
+      server.close(() => {
+        console.log('✅ Сервер остановлен');
+        process.exit(0);
+      });
+    });
+    
   } catch (err) {
     console.error("❌ Ошибка запуска:", err);
     process.exit(1);

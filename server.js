@@ -20,13 +20,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Логирование
-app.use((req, res, next) => {
-  console.log(`📨 ${req.method} ${req.url}`);
-  next();
-});
-
-// ===== HEALTH CHECK (для Railway) =====
+// ===== HEALTH CHECK (ПЕРВЫЙ МАРШРУТ) =====
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
@@ -51,8 +45,8 @@ app.get("/", (req, res) => {
   res.json({
     message: "🚀 API работает!",
     endpoints: {
-      test: "/api/test",
       health: "/health",
+      test: "/api/test",
       products: "/api/products",
       orders: "/api/orders",
       auth: "/api/auth",
@@ -72,23 +66,14 @@ app.use((err, req, res, next) => {
 });
 
 // ===== ЗАПУСК =====
-const start = async () => {
-  try {
-    console.log('🔄 Запуск сервера...');
-    await connectDB();
-    
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Сервер запущен на порту ${PORT}`);
-      console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-    });
-    
-    console.log('✅ Сервер успешно запущен и ожидает запросы');
-    
-  } catch (err) {
-    console.error("❌ Ошибка запуска:", err);
-    // Не выходим из процесса
-  }
-};
+const PORT = process.env.PORT || 5000;
 
-start();
+connectDB().then(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Сервер запущен на порту ${PORT}`);
+    console.log(`🌐 Health check: /health`);
+    console.log(`✅ Готов к работе!`);
+  });
+}).catch((err) => {
+  console.error("❌ Ошибка запуска:", err);
+});

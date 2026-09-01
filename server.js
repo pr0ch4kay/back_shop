@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const connectDB = require("./config/db"); // ✅ ПОДКЛЮЧАЕМ db.js
+const connectDB = require("./config/db");
 
 const authRoutes = require("./routes/auth.routes");
 const productRoutes = require("./routes/products");
@@ -11,14 +11,28 @@ const statsRoutes = require("./routes/stats");
 
 const app = express();
 
-// Middleware
-app.use(cors({ 
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true 
+// CORS
+app.use(cors({
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
+  credentials: true
 }));
+
 app.use(express.json());
+
+// Логирование
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.url}`);
+  next();
+});
+
+// Тестовый маршрут
+app.get("/api/test", (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'Бэкенд работает!',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Маршруты
 app.use("/api/auth", authRoutes);
@@ -32,18 +46,17 @@ app.get("/", (req, res) => {
   res.json({
     message: "🚀 API работает!",
     endpoints: {
-      auth: "/api/auth",
+      test: "/api/test",
       products: "/api/products",
       orders: "/api/orders",
-      users: "/api/users",
-      stats: "/api/stats",
+      auth: "/api/auth",
     },
   });
 });
 
-// Обработка 404
+// 404
 app.use((req, res) => {
-  res.status(404).json({ error: "Маршрут не найден" });
+  res.status(404).json({ error: `Маршрут ${req.url} не найден` });
 });
 
 // Обработка ошибок
@@ -52,13 +65,14 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message });
 });
 
+// ===== ЗАПУСК =====
 const start = async () => {
   try {
-    // ✅ Здесь вызывается connectDB() из db.js
+    console.log('🔄 Подключение к MongoDB...');
     await connectDB();
     
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Сервер запущен на порту ${PORT}`);
       console.log(`🌐 API доступен: http://localhost:${PORT}`);
     });
